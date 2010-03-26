@@ -6,6 +6,7 @@ Keep in mind that the initial scan on each system will return a full list of "CR
 
 Basic Example
 ----
+<pre>
 <code>
 from deltafy import *
 import time
@@ -43,9 +44,11 @@ if deltas.has_path("/myproject/file.xml"):
 	# generate code from xml..
 	pass
 </code>
+</pre>
 
 Advanced Example
 ----
+<pre>
 <code>
 from deltafy import *
 import os
@@ -59,5 +62,7 @@ def xmlincluder(path, isfile):
 
 myproject = Deltafy("/myproject", xmlincluder)
 </code>
+</pre>
 
 If you're looking for more, you can also run and read the testsuite under tests/tests.py.
+
