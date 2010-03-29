@@ -41,8 +41,8 @@ class DeltafyTests(unittest.TestCase):
 	
 	def test_initial_pass(self):
 		self.assertEquals(len(self.deltas), len(self.file_paths))
-		for i in range(0,len(self.file_paths)):
-			self.assertEquals(self.deltas[i].get_path(), self.file_paths[i])
+		for file_path in self.file_paths:
+			self.assertTrue(self.deltas.has_path(file_path))	
 
 	def test_second_pass(self):
 		self.assertEquals(len(self.deltas), 0)
@@ -82,8 +82,8 @@ class DeltafyTests(unittest.TestCase):
 		self.assertEquals(len(self.deltas), len(self.file_paths))
 		i = 0
 		for file_path in self.file_paths:
-			self.assertEquals(self.deltas[i].get_path(), file_path)
-			self.assertEquals(self.deltas[i].get_status(), Delta.MODIFIED)
+			self.assertTrue(self.deltas.has_path(file_path))
+			self.assertTrue(self.deltas.is_updated(file_path))
 			i+=1
 	
 	def test_exclude_files(self):

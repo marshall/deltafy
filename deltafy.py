@@ -5,7 +5,7 @@
 # Author: Marshall Culpepper
 # Licensed under the Apache Public License v2 (see LICENSE.txt)
 
-import os, sys, platform, sqlite3, time
+import os, sys, platform, sqlite3, time, stat
 from datetime import datetime, timedelta
 
 class DeltaList(list):
@@ -89,9 +89,8 @@ class Deltafy:
 		c.close()
 		return timestamp
 	
-	def insert_timestamp(self, path):
-		statinfo = os.stat(path)
-		timestamp = datetime.fromtimestamp(statinfo.st_mtime)
+	def insert_timestamp(self, path, path_stat):
+		timestamp = datetime.fromtimestamp(path_stat.st_mtime)
 		self.conn.execute('insert into timestamps(path, modified) values (?, ?)', (path, timestamp))
 		self.conn.commit()
 		return timestamp
@@ -112,11 +111,11 @@ class Deltafy:
 		c.close()
 		return paths
 
-	def check_delta(self, path):
+	def check_delta(self, path, path_stat):
 		timestamp = self.get_timestamp(path)
-		modified_time = datetime.fromtimestamp(os.stat(path).st_mtime)
+		modified_time = datetime.fromtimestamp(path_stat.st_mtime)
 		if timestamp is None:
-			timestamp = self.insert_timestamp(path)
+			timestamp = self.insert_timestamp(path, path_stat)
 			return Delta(path, timestamp, Delta.CREATED)
 		elif modified_time - timestamp >= timedelta(seconds=1):
 			# this needs to be a little fuzzy.
@@ -127,26 +126,12 @@ class Deltafy:
 
 	def scan(self):
 		deltas = DeltaList()
-		# first pass against the filesystem
-		for root, dirs, files in os.walk(self.dir):
-			include_root = True
-			if self.include_callback is not None:
-				include_root = self.include_callback(root, False)
-			if not include_root:
-				continue
-			
-			for file in files:
-				file_path = os.path.join(root, file)
-				include_file = True
-				if self.include_callback is not None:
-					include_file = self.include_callback(file_path, True)
-				if not include_file:
-					continue
-			
-				file_delta = self.check_delta(file_path)
-				if file_delta is not None:
-					deltas.append(file_delta)
 		
+		# first pass against the filesystem
+		self.scan_path(self.dir, deltas)
+		
+		# second pass check again paths in db
+		# to find deleted paths in the filesystem
 		for path in self.get_paths():
 			if path.startswith(self.dir):
 				include_path = True
@@ -159,7 +144,30 @@ class Deltafy:
 					self.delete_timestamp(path)
 					deltas.append(Delta(path, 0, Delta.DELETED))
 		return deltas
-
+	
+	def scan_path(self, path, deltas):
+		for file in os.listdir(path):
+			absolute_path = os.path.join(path, file)
+			# reduce to just one stat, major speed up in windows
+			path_stat = os.stat(absolute_path)
+			if stat.S_ISDIR(path_stat.st_mode):
+				include_dir = True
+				if self.include_callback is not None:
+					include_dir = self.include_callback(absolute_path, False)
+				if not include_dir:
+					continue
+				
+				self.scan_path(absolute_path, deltas)
+			else:
+				include_file = True
+				if self.include_callback is not None:
+					include_file = self.include_callback(absolute_path, True)
+				if not include_file:
+					continue
+				
+				file_delta = self.check_delta(absolute_path, path_stat)
+				if file_delta is not None:
+					deltas.append(file_delta)
 	
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
