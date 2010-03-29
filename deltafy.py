@@ -32,7 +32,7 @@ class Delta:
 		self.status = status
 	
 	def __str__(self):
-		return "%s [%s]" % (self.get_status_str(), self.get_path())
+		return "%s [%s] @ %s" % (self.get_status_str(), self.get_path(), self.get_timestamp())
 	
 	def get_path(self):
 		return self.path
@@ -118,7 +118,9 @@ class Deltafy:
 		if timestamp is None:
 			timestamp = self.insert_timestamp(path)
 			return Delta(path, timestamp, Delta.CREATED)
-		elif timestamp < modified_time:
+		elif modified_time - timestamp >= timedelta(seconds=1):
+			# this needs to be a little fuzzy.
+			# windows loses a few microseconds in precision
 			self.update_timestamp(path, modified_time)
 			return Delta(path, modified_time, Delta.MODIFIED)
 		return None
