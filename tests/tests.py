@@ -63,6 +63,7 @@ class DeltafyTests(unittest.TestCase):
 		self.assertEquals(self.deltas[0].get_path(), file_path)
 		self.assertEquals(self.deltas[0].get_status(), Delta.CREATED)
 		self.assertTrue(self.deltas.has_path(file_path))
+		self.assertTrue(self.deltas.is_updated(file_path))
 	
 	def test_file_deleted(self):
 		file_path = os.path.join(tests_dir, 'dir2', 'file2.txt')

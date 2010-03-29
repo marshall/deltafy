@@ -14,6 +14,13 @@ class DeltaList(list):
 			if delta.get_path() == path: return True
 		return False
 
+	def is_updated(self, path):
+		for delta in self:
+			if delta.get_path() == path:
+				return delta.get_status() == Delta.MODIFIED or \
+					delta.get_status() == Delta.CREATED
+		return False
+
 class Delta:
 	CREATED = 0
 	MODIFIED = 1
@@ -105,6 +112,17 @@ class Deltafy:
 		c.close()
 		return paths
 
+	def check_delta(self, path):
+		timestamp = self.get_timestamp(path)
+		modified_time = datetime.fromtimestamp(os.stat(path).st_mtime)
+		if timestamp is None:
+			timestamp = self.insert_timestamp(path)
+			return Delta(path, timestamp, Delta.CREATED)
+		elif timestamp < modified_time:
+			self.update_timestamp(path, modified_time)
+			return Delta(path, modified_time, Delta.MODIFIED)
+		return None
+
 	def scan(self):
 		deltas = DeltaList()
 		# first pass against the filesystem
@@ -122,15 +140,10 @@ class Deltafy:
 					include_file = self.include_callback(file_path, True)
 				if not include_file:
 					continue
-				
-				timestamp = self.get_timestamp(file_path)
-				modified_time = datetime.fromtimestamp(os.stat(file_path).st_mtime)
-				if timestamp is None:
-					timestamp = self.insert_timestamp(file_path)
-					deltas.append(Delta(file_path, timestamp, Delta.CREATED))
-				elif timestamp < modified_time:
-					self.update_timestamp(file_path, modified_time)
-					deltas.append(Delta(file_path, modified_time, Delta.MODIFIED))
+			
+				file_delta = self.check_delta(file_path)
+				if file_delta is not None:
+					deltas.append(file_delta)
 		
 		for path in self.get_paths():
 			if path.startswith(self.dir):
@@ -145,6 +158,7 @@ class Deltafy:
 					deltas.append(Delta(path, 0, Delta.DELETED))
 		return deltas
 
+	
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
 		print "Usage: %s <dir>" % sys.argv[0]
