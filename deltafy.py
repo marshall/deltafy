@@ -61,6 +61,10 @@ class Deltafy:
 		return cls.db_path
 
 	@classmethod
+	def set_database_path(cls, path):
+		cls.db_path = path
+
+	@classmethod
 	def compare_paths(cls, path1, path2):
 		time1 = datetime.fromtimestamp(os.stat(path1).st_mtime)
 		time2 = datetime.fromtimestamp(os.stat(path2).st_mtime)
@@ -144,6 +148,9 @@ class Deltafy:
 					self.delete_timestamp(path)
 					deltas.append(Delta(path, 0, Delta.DELETED))
 		return deltas
+
+	def scan_single_file(self, file):
+		return self.check_delta(file, os.stat(file))
 	
 	def scan_path(self, path, deltas):
 		for file in os.listdir(path):
