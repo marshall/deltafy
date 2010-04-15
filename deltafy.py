@@ -84,8 +84,7 @@ class Deltafy:
 		self.conn.execute('create table if not exists timestamps (path text, modified timestamp)')
 	
 	def clear_state(self):
-		self.conn.execute('drop table timestamps')
-		self.conn.execute('create table if not exists timestamps (path text, modified timestamp)')
+		self.conn.execute('delete from timestamps')
 		self.conn.commit()
 	
 	def get_timestamp(self, path):
