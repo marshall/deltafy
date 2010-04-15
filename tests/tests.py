@@ -16,7 +16,7 @@ if os.path.exists(Deltafy.get_database_path()):
 
 def suite():
 	tests = ['test_initial_pass', 'test_second_pass', 'test_file_modified',
-		'test_file_created', 'test_file_deleted', 'test_files_modified', 'test_exclude_files']
+		'test_file_created', 'test_file_deleted', 'test_files_modified', 'test_exclude_files', 'test_clear']
 	return unittest.TestSuite(map(DeltafyTests, tests))
 
 class DeltafyTests(unittest.TestCase):
@@ -104,6 +104,13 @@ class DeltafyTests(unittest.TestCase):
 		self.assertEquals(self.deltas[0].get_path(), self.file_paths[0])
 		self.assertEquals(self.deltas[1].get_path(), self.file_paths[2])
 		self.assertEquals(self.deltas[2].get_path(), self.file_paths[5])
+	
+	def test_clear(self):
+		self.d.clear_state()
+		paths = self.d.get_paths()
+		self.assertEquals(len(paths), 0)
+		deltas = self.d.scan()
+		self.assertEquals(len(deltas), len(self.file_paths))
 		
 if __name__ == "__main__":
 	runner = unittest.TextTestRunner()

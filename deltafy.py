@@ -83,6 +83,11 @@ class Deltafy:
 		self.conn = sqlite3.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES)
 		self.conn.execute('create table if not exists timestamps (path text, modified timestamp)')
 	
+	def clear_state(self):
+		self.conn.execute('drop table timestamps')
+		self.conn.execute('create table if not exists timestamps (path text, modified timestamp)')
+		self.conn.commit()
+	
 	def get_timestamp(self, path):
 		c = self.conn.cursor()
 		c.execute('select modified from timestamps where path = ?', (path,))
